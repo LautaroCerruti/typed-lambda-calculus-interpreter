@@ -103,3 +103,12 @@ infer' c e (t :@: u) = infer' c e t >>= \tt -> infer' c e u >>= \tu ->
 infer' c e (Lam t u) = infer' (t : c) e u >>= \tu -> ret $ FunT t tu
 
 ----------------------------------
+{-
+  Retorna un tipo Either String Type ya que de esta forma puede devolver errores con un Left. 
+  Los errores posibles son 
+    matchError: Este error ocurre cuando el tipo inferido es distinto al tipo especificado
+    notfunError: Este error ocurre cuando el tipo de t no es una funcion cuando se esta evaluando una aplicacion t u.
+    notfoundError: Este error ocurre cuando el tipo de una variable libre no se encuentra en el entorno.
+  
+  El operador >>= lo que hace es que si el valor v es Left e, devuelve Left e propagando el error e, pero si el operador es un Right v1 le aplica f a v1 y devuelve este resultado
+-}
