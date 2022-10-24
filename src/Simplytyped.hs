@@ -24,6 +24,7 @@ conversion' :: [String] -> LamTerm -> Term
 conversion' b (LVar n    ) = maybe (Free (Global n)) Bound (n `elemIndex` b)
 conversion' b (LApp t u  ) = conversion' b t :@: conversion' b u
 conversion' b (LAbs n t u) = Lam t (conversion' (n : b) u)
+conversion' b (LLet n e1 e2) = Let (conversion' b e1) (conversion' (n : b) e2)
 
 
 -----------------------
@@ -36,12 +37,14 @@ sub _ _ (Bound j) | otherwise = Bound j
 sub _ _ (Free n   )           = Free n
 sub i t (u   :@: v)           = sub i t u :@: sub i t v
 sub i t (Lam t'  u)           = Lam t' (sub (i + 1) t u)
+sub i t (Let e1 e2)           = Let (sub i t e1) (sub (i + 1) t e2)
 
 -- evaluador de términos
 eval :: NameEnv Value Type -> Term -> Value
 eval _ (Bound _             ) = error "variable ligada inesperada en eval"
 eval e (Free  n             ) = fst $ fromJust $ lookup n e
 eval _ (Lam      t   u      ) = VLam t u
+eval e (Let e1 e2) = eval e (sub 0 (quote (eval e e1)) e2)
 eval e (Lam _ u  :@: Lam s v) = eval e (sub 0 (Lam s v) u)
 eval e (Lam t u1 :@: u2) = let v2 = eval e u2 in eval e (sub 0 (quote v2) u1)
 eval e (u        :@: v      ) = case eval e u of
@@ -101,9 +104,11 @@ infer' c e (t :@: u) = infer' c e t >>= \tt -> infer' c e u >>= \tu ->
     FunT t1 t2 -> if (tu == t1) then ret t2 else matchError t1 tu
     _          -> notfunError tt
 infer' c e (Lam t u) = infer' (t : c) e u >>= \tu -> ret $ FunT t tu
+infer' c e (Let e1 e2) = infer' c e e1 >>= \t1 -> infer' (t1 : c) e e2
 
 ----------------------------------
 {-
+  EJ 1
   Retorna un tipo Either String Type ya que de esta forma puede devolver errores con un Left. 
   Los errores posibles son 
     matchError: Este error ocurre cuando el tipo inferido es distinto al tipo especificado
