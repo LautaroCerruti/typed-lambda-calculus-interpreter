@@ -53,6 +53,12 @@ pp ii vs (Pair e1 e2) =
   parens (sep [parensIf (isNVal e1) (pp ii vs e1),
     text ",",
     parensIf (isNVal e2) (pp ii vs e2)])
+pp ii vs (Fst e) =
+  sep [text "fst",
+    parensIf (isNVal e) (pp ii vs e)]
+pp ii vs (Snd e) =
+  sep [text "snd",
+    parensIf (isNVal e) (pp ii vs e)]
 
 isLam :: Term -> Bool
 isLam (Lam _ _) = True
@@ -94,6 +100,8 @@ fv (Lam _   u       ) = fv u
 fv (Let t   u       ) = fv t ++ fv u
 fv (As e    _       ) = fv e
 fv (Pair e1 e2)       = fv e1 ++ fv e2
+fv (Fst e)            = fv e
+fv (Snd e)            = fv e
 
 ---
 printTerm :: Term -> Doc
