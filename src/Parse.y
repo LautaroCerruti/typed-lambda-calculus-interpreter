@@ -1,6 +1,6 @@
 {
 module Parse where
-import Common
+import Common 
 import Data.Maybe
 import Data.Char
 
@@ -19,6 +19,7 @@ import Data.Char
     ':'     { TColon }
     '\\'    { TAbs }
     '.'     { TDot }
+    ','     { TComma }
     '('     { TOpen }
     ')'     { TClose }
     '->'    { TArrow }
@@ -26,12 +27,19 @@ import Data.Char
     IN      { TIn }
     VAR     { TVar $$ }
     TYPEE   { TTypeE }
+    TYPEU   { TTypeU }
+    TYPEP   { TTypeP }
     DEF     { TDef }
+    AS      { TAs }
+    UNIT    { TUnit }
+    FST     { TFst }
+    SND     { TSnd }
     
 
 %right VAR
 %left '=' 
 %right '->'
+%left AS
 %right '\\' '.' LET IN
 
 %%
@@ -42,19 +50,32 @@ Defexp  : DEF VAR '=' Exp              { Def $2 $4 }
 
 Exp     :: { LamTerm }
         : '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
-        | LET VAR '=' Exp IN Exp   { LLet $2 $4 $6 }
-        | NAbs                         { $1 }
+        | LET VAR '=' Exp IN Exp       { LLet $2 $4 $6 }
+        | AsAbs                        { $1 }
         
+AsAbs   :: { LamTerm }
+        : AsAbs AS Type                { LAs $1 $3 }
+        | Funs                         { $1 }
+
+Funs    :: { LamTerm }
+        : FST Funs                     { LFst $2 }
+        | SND Funs                     { LSnd $2 }
+        | NAbs                         { $1 }
+
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
         | Atom                         { $1 }
 
 Atom    :: { LamTerm }
         : VAR                          { LVar $1 }  
+        | UNIT                         { LUnit }
+        | '(' Exp ',' Exp ')'          { LPair $2 $4 }
         | '(' Exp ')'                  { $2 }
 
 Type    : TYPEE                        { EmptyT }
+        | TYPEU                        { UnitT }
         | Type '->' Type               { FunT $1 $3 }
+        | '(' Type ',' Type ')'        { PairT $2 $4 }
         | '(' Type ')'                 { $2 }
 
 Defs    : Defexp Defs                  { $1 : $2 }
@@ -91,6 +112,8 @@ happyError = \ s i -> Failed $ "Línea "++(show (i::LineNumber))++": Error de pa
 
 data Token = TVar String
                | TTypeE
+               | TTypeU
+               | TTypeP
                | TDef
                | TAbs
                | TDot
@@ -98,9 +121,14 @@ data Token = TVar String
                | TClose 
                | TColon
                | TArrow
+               | TComma
+               | TFst
+               | TSnd
+               | TUnit
                | TEquals
                | TLet
                | TIn
+               | TAs
                | TEOF
                deriving Show
 
@@ -122,13 +150,19 @@ lexer cont s = case s of
                     (')':cs) -> cont TClose cs
                     (':':cs) -> cont TColon cs
                     ('=':cs) -> cont TEquals cs
+                    (',':cs) -> cont TComma cs
                     unknown -> \line -> Failed $ 
                      "Línea "++(show line)++": No se puede reconocer "++(show $ take 10 unknown)++ "..."
                     where lexVar cs = case span isAlpha cs of
                               ("E",rest)    -> cont TTypeE rest
+                              ("Unit",rest)    -> cont TTypeU rest
+                              ("unit",rest)    -> cont TUnit rest
                               ("def",rest)  -> cont TDef rest
                               ("let",rest)  -> cont TLet rest
+                              ("fst",rest)  -> cont TFst rest
+                              ("snd",rest)  -> cont TSnd rest
                               ("in",rest)  -> cont TIn rest
+                              ("as",rest)  -> cont TAs rest
                               (var,rest)    -> cont (TVar var) rest
                           consumirBK anidado cl cont s = case s of
                               ('-':('-':cs)) -> consumirBK anidado cl cont $ dropWhile ((/=) '\n') cs
