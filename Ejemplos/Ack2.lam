@@ -1,0 +1,3 @@
+def aux = \f:Nat->Nat.\n:Nat. R (f (suc 0)) (\x:Nat.\ii:Nat.f x) n
+
+def Ack = \m:Nat .R (\n:Nat.suc n) (\x:Nat->Nat.\i:Nat.aux x) m
