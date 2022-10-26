@@ -21,7 +21,7 @@ conversion :: LamTerm -> Term
 conversion = conversion' []
 
 conversion' :: [String] -> LamTerm -> Term
-conversion' b (LUnit)      = Unit
+conversion' _ (LUnit)      = Unit
 conversion' b (LVar n    ) = maybe (Free (Global n)) Bound (n `elemIndex` b)
 conversion' b (LApp t u  ) = conversion' b t :@: conversion' b u
 conversion' b (LAbs n t u) = Lam t (conversion' (n : b) u)
@@ -30,6 +30,9 @@ conversion' b (LAs e t) = As (conversion' b e) t
 conversion' b (LPair e1 e2) = Pair (conversion' b e1) (conversion' b e2)
 conversion' b (LFst e) = Fst (conversion' b e)
 conversion' b (LSnd e) = Snd (conversion' b e)
+conversion' _ (LZero) = Zero
+conversion' b (LSuc n) = Suc (conversion' b n)
+conversion' b (LRec e1 e2 e3) = Rec (conversion' b e1) (conversion' b e2) (conversion' b e3)
 
 -----------------------
 --- eval
@@ -47,6 +50,9 @@ sub i t (As e t')             = As (sub i t e) t'
 sub i t (Pair e1 e2)          = Pair (sub i t e1) (sub i t e2)
 sub i t (Fst e)               = Fst (sub i t e)
 sub i t (Snd e)               = Snd (sub i t e)
+sub _ _ (Zero)                = Zero
+sub i t (Suc n)               = Suc (sub i t n)
+sub i t (Rec e1 e2 e3)        = Rec (sub i t e1) (sub i t e2) (sub i t e3)
 
 -- evaluador de términos
 eval :: NameEnv Value Type -> Term -> Value
@@ -68,8 +74,14 @@ eval e (Snd e1) = case eval e e1 of
 eval e (u        :@: v      ) = case eval e u of
   VLam t u' -> eval e (Lam t u' :@: v)
   _         -> error "Error de tipo en run-time, verificar type checker"
-
-
+eval _ (Zero) = VNum NZero
+eval e (Suc n) = case eval e n of
+  VNum v -> VNum (NSuc v)
+  _      -> error "Error de tipo en run-time, verificar type checker"
+eval e (Rec e1 e2 e3) = case eval e e3 of
+  VNum NZero    -> eval e e1
+  VNum (NSuc n) -> let num = quoteNum n in eval e ((e2 :@: (Rec e1 e2 num)) :@: num)
+  _             -> error "Error de tipo en run-time, verificar type checker"
 -----------------------
 --- quoting
 -----------------------
@@ -78,6 +90,11 @@ quote :: Value -> Term
 quote (VLam t f) = Lam t f
 quote VUnit = Unit
 quote (VPair e1 e2) = Pair (quote e1) (quote e2)
+quote (VNum n) = quoteNum n
+
+quoteNum :: NumVal -> Term
+quoteNum (NZero) = Zero
+quoteNum (NSuc n) = Suc (quoteNum n)
 
 ----------------------
 --- type checker
@@ -120,6 +137,7 @@ notfoundError n = err $ show n ++ " no está definida."
 infer' :: Context -> NameEnv Value Type -> Term -> Either String Type
 infer' c _ (Bound i) = ret (c !! i)
 infer' _ _ Unit = ret UnitT
+infer' _ _ (Zero) = ret NatT
 infer' _ e (Free  n) = case lookup n e of
   Nothing     -> notfoundError n
   Just (_, t) -> ret t
@@ -139,3 +157,11 @@ infer' c e (Snd e1) = infer' c e e1 >>= \tt ->
   case tt of 
     PairT t1 t2 -> ret t2
     _           -> notpairError tt
+infer' c e (Suc n) = infer' c e n >>= \tt -> 
+  case tt of 
+    NatT -> ret NatT
+    _    -> matchError NatT tt
+infer' c e (Rec e1 e2 e3) = infer' c e e1 >>= \t1 -> infer' c e e2 >>= \t2 -> 
+  case t2 of
+    FunT ta (FunT NatT tb) -> if (ta /= t1 || tb /= t1) then (matchError (FunT t1 (FunT NatT t1)) t2) else (infer' c e e3 >>= \t3 -> if t3 == NatT then ret t1 else matchError NatT t3)
+    _                      -> matchError (FunT t1 (FunT NatT t1)) t2
