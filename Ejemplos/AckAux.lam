@@ -1,0 +1,125 @@
+def suma = \x:Nat.\y:Nat.R y (\n:Nat.\t:Nat.suc n) x
+
+def pred = \x:Nat.R 0 (\y:Nat.\z:Nat.z) x
+
+def Ack =\m.\n R (suc) (\f:Nat->Nat.\i:Nat.(\R () () ())) m
+
+
+
+Ack = \m n -> R (suc) (\x i.(\f n. R (f (suc 0)) (\y ii.f y) n) x) m
+
+
+
+Ack : N → N → N
+Ack 0 n = n + 1
+Ack m 0 = Ack (m − 1) 1
+Ack m n = Ack (m − 1) (Ack m (n − 1))
+
+Ack 0 = \n -> suc n
+Ack m = \n -> if n == 0 then Ack (m − 1) 1 else Ack (m − 1) (Ack m (n − 1))
+
+Ack 0 = \n -> suc n
+Ack m = \n -> aux (Ack (m − 1)) n
+    where aux f 0 = f 1 
+          aux f n = f (Ack m (n − 1))
+
+
+Ack 0 = \n -> suc n
+Ack m = \n -> aux (Ack (m − 1)) n
+    where aux f 0 = f 1 
+          aux f n = f (aux f (n − 1))
+
+Ack = \m n -> R (suc) (aux) m
+    where aux f 0 = f 1 
+          aux f n = f (aux f (n − 1))
+
+Ack = \m n -> R (suc) (aux) m
+    where aux = \f n. R (f (suc 0)) f n
+
+Ack = \m n -> R (suc) (\x i.(\f n. R (f (suc 0)) (\y ii.f y) n) x) m
+
+ack =\m n -> R (suc) (\x:Nat->Nat.\i:Nat.(\f → R (f 1) (\xx:Nat.\ii.Nat.f xx)) x) m n
+
+
+
+
+ack = \m n -> (R (suc) (\f:Nat->Nat.\i:Nat. R (f (suc 0)) f) m) n
+
+
+
+
+
+
+
+
+
+Ack : N → N → N
+Ack 0 n = n + 1
+Ack m 0 = Ack (m − 1) 1
+Ack m n = Ack (m − 1) (Ack m (n − 1))
+
+
+Ack : N → N → N
+Ack 0 = \n.n+1
+Ack m = \n. aux n
+    where aux 0 = Ack (m − 1) 1
+          aux y = Ack (m − 1) (Ack m (y − 1))
+
+
+Ack : N → N → N
+Ack 0 = \n.n+1
+Ack m = \n. aux (Ack (m − 1)) n
+    where aux f 0 = f 1
+          aux f y = f (Ack m (y − 1))
+
+
+Ack : N → N → N
+Ack 0 = \n.n+1
+Ack m = \n. aux (Ack (m − 1)) n
+    where aux f 0 = f 1
+          aux f y = f ((\n. aux f n) (y − 1))
+
+Ack : N → N → N
+Ack = \m:Nat .R (\n:Nat.suc n) (\x.Nat->Nat.\i:Nat.aux x) m
+
+aux f 0 = f 1
+aux f y = f (aux f (y − 1))
+
+aux = \f:Nat->Nat.\n:Nat. R (f (suc 0)) (\x:Nat.\ii:Nat.aux f x) n
+
+
+
+
+Ack : N → N → N
+Ack 0 n = n + 1
+Ack m 0 = Ack (m − 1) 1
+Ack m n = Ack (m − 1) (Ack m (n − 1))
+
+Ack 0 = \n:Nat. suc n
+Ack m = \n:Nat. aux n
+    where aux 0 = Ack (m − 1) 1
+          aux n = Ack (m − 1) (Ack m (n − 1))
+
+Ack 0 = \n:Nat. suc n
+Ack m = \n:Nat. aux (Ack (m − 1)) n
+    where aux f 0 = f 1
+          aux f n = f (Ack m (n − 1))
+
+Ack 0 = \n:Nat. suc n
+Ack m = \n:Nat. aux (Ack (m − 1)) n
+    where aux f 0 = f 1
+          aux f n = f ((\n:Nat. aux (Ack (m − 1)) n) (n − 1))
+
+Ack 0 = \n:Nat. suc n
+Ack m = \n:Nat. aux (Ack (m − 1)) n
+    where aux f 0 = f 1
+          aux f n = f ((\n:Nat. aux f n) (n − 1))
+
+Ack m = \m:Nat. R (\n:Nat. suc n) (\x:Nat->Nat.\i:Nat. aux x) m
+
+aux f 0 = f 1
+aux f n = f (aux f (n − 1))
+
+aux f = \n:Nat. R (f (suc 0)) (\x:Nat.\i:Nat. f x) n
+
+aux = \f:Nat->Nat.\n:Nat. R (f (suc 0)) (\x:Nat.\i:Nat. f x) n
