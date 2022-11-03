@@ -115,7 +115,7 @@ Ack m = \n:Nat. aux (Ack (m − 1)) n
     where aux f 0 = f 1
           aux f n = f ((\n:Nat. aux f n) (n − 1))
 
-Ack m = \m:Nat. R (\n:Nat. suc n) (\x:Nat->Nat.\i:Nat. aux x) m
+Ack = \m:Nat. R (\n:Nat. suc n) (\x:Nat->Nat.\i:Nat. aux x) m
 
 aux f 0 = f 1
 aux f n = f (aux f (n − 1))

@@ -61,8 +61,7 @@ pp ii vs (Snd e) =
   sep [text "snd",
     parensIf (isNVal e) (pp ii vs e)]
 pp ii vs (Suc n) =
-  sep [text "suc",
-    parensIf (isNVal n) (pp ii vs n)]
+  text "suc " <> parensIf (isNVal n) (pp ii vs n)
 pp ii vs (Rec e1 e2 e3) =
   sep [text "R",
     parensIf (isNVal e1) (pp ii vs e1),
